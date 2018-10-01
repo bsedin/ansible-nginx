@@ -1,0 +1,81 @@
+---
+nginx_image: nginx:alpine
+nginx_container_name: nginx
+nginx_dir: /etc/nginx
+nginx_log_dir: /var/log/nginx
+nginx_cache_dir: /var/lib/nginx/cache
+nginx_ssl_dir: '{{ nginx_dir }}/ssl'
+nginx_container_ssl_dir: '{{ nginx_dir }}/ssl'
+nginx_hosts: [] # nginx_hosts:
+                # - fqdn: yourserver.io
+                #   proxy_pass: nginx-proxy
+                #   ssl:
+                #     enabled: true
+                #     force: true
+                #
+                # - fqdn: jenkins.yourserver.io
+                #   server_names:
+                #     - jenkins01.yourserver.io
+                #     - jenkins02.yourserver.io
+                #   proxy_pass: nginx-proxy
+                #   proxy_params: |
+                #     proxy_set_header Host              $http_host;
+                #     proxy_set_header X-Real-IP         $remote_addr;
+                #     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+                #     proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+                #     proxy_set_header X-Forwarded-Host  $http_host;
+                #     proxy_set_header Connection        "";
+                #     proxy_http_version                 1.1;
+                #     proxy_redirect                     default;
+                #     proxy_max_temp_file_size           0;
+                #     proxy_connect_timeout              90s;
+                #     proxy_send_timeout                 90s;
+                #     proxy_read_timeout                 60s;
+                #     proxy_buffering                    off;
+                #     proxy_request_buffering            off;
+                #   ssl:
+                #     enabled: false
+                #
+                # - fqdn: website.yoursever.io
+                #   proxy_pass:
+                #     - app01-nginx
+                #     - app02-nginx backup
+                #   ssl:
+                #     enabled: true
+                #     force: true
+                #     hsts: true
+
+nginx_listen_addresses: ['*']
+nginx_worker_processes: 2
+nginx_maxconn: 16384
+nginx_docker_network:
+  name: nginx-net
+  driver: bridge
+  ipam_options: {}
+nginx_networks:
+  - name: nginx-net
+nginx_sysctls:
+  net.core.somaxconn: '{{ nginx_maxconn }}'
+nginx_ulimits:
+  - nofile:65536:65536
+nginx_links: []
+nginx_volumes:
+  - '{{ nginx_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro'
+  - '{{ nginx_ssl_dir }}:/etc/nginx/ssl:ro'
+  - '{{ nginx_dir }}/conf.d:/etc/nginx/conf.d:ro'
+  - '{{ nginx_dir }}/htpasswd.d:/etc/nginx/htpasswd.d:ro'
+  - '{{ nginx_log_dir }}:/var/log/nginx'
+  - '{{ nginx_cache_dir }}:/var/lib/nginx/cache'
+  - /var/www:/var/www:ro
+nginx_published_ports:
+  - 80:80
+  - 443:443
+nginx_env: {}
+nginx_proxy_protocol: false
+nginx_listen_options: '' # eg. fastopen=500 backlog=2048 rcvbuf=64000 sndbuf=200000
+nginx_upstream_keepalive: 8
+nginx_dhparam_size: 2048
+
+nginx_options_proxy_buffering: 'on'
+nginx_options_upstream_balancing_algorithm: false
+nginx_http_options: ''

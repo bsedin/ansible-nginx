@@ -1,0 +1,98 @@
+---
+- name: ensure nginx data dir
+  file:
+    dest: '{{ item }}'
+    state: directory
+  with_items:
+    - '{{ nginx_log_dir }}'
+    - '{{ nginx_ssl_dir }}'
+    - '{{ nginx_dir }}/conf.d'
+    - '{{ nginx_dir }}/htpasswd.d'
+
+- name: ensure nginx cache dir
+  file:
+    dest: '{{ nginx_cache_dir }}'
+    state: directory
+    owner: 100
+    group: 101
+
+- name: create nginx docker network
+  docker_network:
+    name: '{{ nginx_docker_network.name }}'
+    state: present
+    driver: '{{ nginx_docker_network.driver | default(bridge) }}'
+    ipam_options: '{{ nginx_docker_network.ipam_options | default({}) }}'
+  when: '{{ nginx_docker_network }}'
+
+- name: create nginx config
+  template: src=nginx.conf.j2 dest='{{ nginx_dir }}/nginx.conf'
+
+- name: ensure domain public directory
+  file:
+    dest: /var/www/html/{{ item.fqdn }}
+    state: directory
+    mode: 0775
+    owner: root
+    group: docker
+  with_items: '{{ nginx_hosts }}'
+  notify: reload nginx
+
+- name: generate domain config
+  template:
+    src: templates/domain.conf.j2
+    dest: '{{ nginx_dir }}/conf.d/{{ item.fqdn }}.conf'
+  with_items: '{{ nginx_hosts }}'
+  notify: reload nginx
+
+- name: generate dh param
+  openssl_dhparam:
+    path: '{{ nginx_ssl_dir }}/dh.pem'
+    size: '{{ nginx_dhparam_size }}'
+
+- name: add htpasswd files
+  htpasswd:
+    path: '{{ nginx_dir }}/htpasswd.d/htpasswd_{{ item.fqdn }}'
+    name: '{{ item.basic_auth.username }}'
+    password: '{{ item.basic_auth.password }}'
+    owner: 100
+    group: 101
+    mode: 0640
+  when: item.basic_auth is defined
+  with_items: '{{ nginx_hosts }}'
+
+- name: nginx test configuration
+  docker_container:
+    state: started
+    restart: yes
+    recreate: yes
+    restart_policy: False
+    auto_remove: no
+    detach: no
+    interactive: no
+    name: nginx-configtest
+    links: '{{ nginx_links }}'
+    networks: '{{ nginx_networks }}'
+    image: '{{ nginx_image }}'
+    volumes: '{{ nginx_volumes }}'
+    env: '{{ nginx_env }}'
+    command: 'nginx -t'
+
+- name: run nginx docker container
+  docker_container:
+    state: started
+    restart: no
+    recreate: no
+    name: '{{ nginx_container_name }}'
+    image: '{{ nginx_image }}'
+    restart_policy: always
+    published_ports: '{{ nginx_published_ports }}'
+    links: '{{ nginx_links }}'
+    networks: '{{ nginx_networks }}'
+    ulimits: '{{ nginx_ulimits }}'
+    sysctls: '{{ nginx_sysctls }}'
+    volumes: '{{ nginx_volumes }}'
+    env: '{{ nginx_env }}'
+
+- name: restart nginx
+  shell: docker restart {{ nginx_container_name }}
+  when: nginx_restart | default(false)

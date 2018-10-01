@@ -1,0 +1,168 @@
+# {{ ansible_managed }}
+
+{% set upstream = (item.fqdn | replace('.', '_')) + '_upstream' %}
+
+{% if item.proxy_pass is defined %}
+  upstream {{ upstream }} {
+    {% if item.proxy_pass is string %}
+      server {{ item.proxy_pass }} max_fails=0 fail_timeout=0;
+    {% else %}
+      {% for server in item.proxy_pass %}
+        server {{ server }} max_fails=0 fail_timeout=0;
+      {% endfor %}
+    {% endif %}
+
+    {% if item.upstream_balancing_algorithm | default(nginx_options_upstream_balancing_algorithm) %}
+      {{ item.upstream_balancing_algorithm | default(nginx_options_upstream_balancing_algorithm) }};
+    {% endif %}
+    keepalive {{ item.keepalive | default(nginx_upstream_keepalive) }};
+  }
+{% endif %}
+
+{%- macro server_names(subdomain) %}
+    server_name {% if subdomain is defined %}{{ subdomain }}.{% endif %}{{ item.fqdn }} {% for servername in (item.server_names | default([])) %}{% if subdomain is defined %} {{ subdomain }}.{% endif %}{{ servername }} {% endfor %};
+{%- endmacro %}
+
+{%- macro logs() %}
+    access_log /var/log/nginx/{{ item.fqdn }}_access.log;
+    error_log /var/log/nginx/{{ item.fqdn }}_error.log;
+{%- endmacro %}
+
+{%- macro ban_hacking_attempts() %}
+  # ban basic bots hack attempts
+  location ~ ^/cgi-bin { return 404; log_not_found off; }
+  location ~ myadmin { return 404; log_not_found off; }
+  {% if item.ban_php | default(true) %}
+    location ~ \.(?:php|aspx|asp)$ { return 404; log_not_found off; }
+    location ~ php\.cgi$ { return 404; log_not_found off; }
+  {% endif %}
+{%- endmacro -%}
+
+{%- macro serve_acme_challenge() %}
+  location /.well-known/acme-challenge {
+    root /var/www/html/{{ item.fqdn }};
+    try_files $uri =500;
+  }
+{%- endmacro -%}
+
+{%- macro redirect_www() -%}
+  if ( $host ~ ^www\.(?<domain>.+)$ ) {
+      return 301 $scheme://$domain$request_uri;
+  }
+{%- endmacro -%}
+
+{%- macro basic_auth() -%}
+  auth_basic "Authorize to enter {{ item.fqdn }}";
+  auth_basic_user_file htpasswd.d/htpasswd_{{ item.fqdn }};
+{%- endmacro -%}
+
+{%- macro proxy_params() -%}
+  {% if item.proxy_params is defined %}
+    {{ item.proxy_params }}
+  {% else %}
+    proxy_set_header Host              $http_host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Host  $http_host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_set_header Connection        "";
+    proxy_http_version                 1.1;
+    proxy_read_timeout                 60s;
+    proxy_redirect                     off;
+  {% endif %}
+{%- endmacro -%}
+
+{%- macro ssl() %}
+  ssl_certificate {{ nginx_container_ssl_dir }}/{{ item.fqdn }}-fullchain.crt;
+  ssl_certificate_key {{ nginx_container_ssl_dir }}/{{ item.fqdn }}.key;
+  ssl_session_timeout 1d;
+  ssl_session_cache shared:SSL:50m;
+  ssl_session_tickets off;
+
+  ssl_dhparam {{ nginx_container_ssl_dir }}/dh.pem;
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+  ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+  ssl_prefer_server_ciphers on;
+
+  {% if item.ssl.hsts | default(false) %}
+    add_header Strict-Transport-Security max-age=15768000;
+  {% endif %}
+
+  ssl_stapling on;
+  ssl_stapling_verify on;
+{%- endmacro %}
+
+{%- macro locations() %}
+  {% if item.root is defined %}
+      root {{ item.root }};
+  {% else %}
+      root /var/www/html/{{ item.fqdn }};
+  {% endif %}
+
+  {{ ban_hacking_attempts() }}
+
+  {% if item.locations is defined %}
+      {% for location in item.locations %}
+          location {{ location.pattern }} {
+            {% if location.basic_auth | default(false) %}{{ basic_auth() }}{% endif %}
+            {{ location.content }}
+          }
+      {% endfor %}
+  {% elif item.proxy_pass is defined %}
+      location / {
+        {% if item.basic_auth is defined %}{{ basic_auth() }}{% endif %}
+        proxy_pass http://{{ upstream }};
+        {{ proxy_params() }}
+      }
+  {% endif %}
+{%- endmacro %}
+
+{%- macro redirect_https() -%}
+    if ($http_x_forwarded_proto != "https") {
+      return 301 https://$server_name$request_uri;
+    }
+{%- endmacro -%}
+
+{%- macro server_block(https = false, www = false) -%}
+  server {
+      {% for address in item.listen_addresses | default(nginx_listen_addresses) %}
+        {% if https %}
+          listen {{ address }}:443 ssl http2 {% if nginx_proxy_protocol %}proxy_protocol{% endif %};
+        {% else %}
+          listen {{ address }}:80 {% if nginx_proxy_protocol %}proxy_protocol{% endif %};
+        {% endif %}
+      {% endfor %}
+
+      {% if www %}
+        {{ server_names('www') }}
+      {% else %}
+        {{ server_names() }}
+      {% endif %}
+
+      {{ logs() }}
+
+      {% if https and item.ssl.enabled | default(false) %}
+        {{ ssl() }}
+      {% endif %}
+
+      {{ serve_acme_challenge() }}
+
+      {% if not https and item.ssl.enabled | default(false) and item.ssl.force | default(false) %}
+        {{ redirect_https() }}
+      {% endif %}
+
+      {% if not www and item.redirect_www | default(true) %}
+          {{ redirect_www() }}
+      {% endif %}
+
+      {{ locations() }}
+  }
+{%- endmacro -%}
+
+{{ server_block(false, false) }}
+{{ server_block(false, true) }}
+
+{% if item.ssl.enabled | default(false) %}
+{{ server_block(true, false) }}
+{{ server_block(true, true) }}
+{% endif %}

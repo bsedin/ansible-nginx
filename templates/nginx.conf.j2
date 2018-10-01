@@ -1,0 +1,114 @@
+user nginx;
+worker_processes {{ nginx_worker_processes }};
+worker_rlimit_nofile 65536;
+pid /var/run/nginx.pid;
+
+error_log  /var/log/nginx/error.log;
+
+events {
+    worker_connections 8192;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    include                /etc/nginx/mime.types;
+    default_type           application/octet-stream;
+
+    access_log             /var/log/nginx/access.log combined;
+    error_log              /var/log/nginx/error.log;
+
+    {{ nginx_http_options }}
+
+    gzip  on;
+    gzip_static on;
+    gzip_http_version 1.0;
+    gzip_vary on;
+    gzip_min_length   1024;
+    gzip_comp_level 5;
+    gzip_proxied any;
+    gzip_disable msie6;
+    gzip_types
+      application/atom+xml
+      application/javascript
+      application/x-javascript
+      application/ecmascript
+      application/json
+      application/ld+json
+      application/manifest+json
+      application/rss+xml
+      application/vnd.geo+json
+      application/vnd.ms-fontobject
+      application/x-font-ttf
+      application/x-web-app-manifest+json
+      application/xhtml+xml
+      application/xml
+      font/opentype
+      image/bmp
+      image/svg+xml
+      image/x-icon
+      text/cache-manifest
+      text/css
+      text/plain
+      text/vcard
+      text/vnd.rim.location.xloc
+      text/vtt
+      text/x-component
+      text/x-cross-domain-policy;
+
+    types_hash_max_size     128;
+    server_tokens           off;
+
+    server_names_hash_bucket_size 255;
+
+    sendfile                on;
+    tcp_nodelay             on;
+    tcp_nopush              on;
+
+    client_max_body_size    2048m;
+    client_body_timeout     10;
+    client_body_buffer_size 128k;
+    reset_timedout_connection on;
+
+    keepalive_timeout       30;
+    keepalive_requests      60000;
+
+    proxy_buffering         {{ nginx_options_proxy_buffering }};
+    proxy_buffer_size       32k;
+    proxy_buffers           16 32k;
+    proxy_next_upstream     error timeout invalid_header http_500 http_502 http_503;
+    proxy_connect_timeout   120s;
+    proxy_read_timeout      120s;
+    proxy_send_timeout      120s;
+    send_timeout            5s;
+    proxy_intercept_errors  on;
+
+    set_real_ip_from  127.0.0.1;
+    set_real_ip_from  172.16.0.0/8;
+    real_ip_recursive on;
+    {% if nginx_proxy_protocol %}
+      real_ip_header proxy_protocol;
+    {% else %}
+      real_ip_header X-Forwarded-For;
+    {% endif %}
+
+    server {
+      {% for address in nginx_listen_addresses %}
+      listen {{ address }}:80 default_server {{ nginx_listen_options }};
+      {% endfor %}
+      server_name _;
+      access_log off;
+      return      444;
+    }
+
+    server {
+      listen *:8081;
+
+      location /.server-status {
+        stub_status on;
+        access_log  off;
+      }
+    }
+
+    include /etc/nginx/conf.d/*;
+}
