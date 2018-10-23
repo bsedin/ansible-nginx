@@ -86,6 +86,27 @@ http {
     set_real_ip_from  127.0.0.1;
     set_real_ip_from  172.16.0.0/8;
     real_ip_recursive on;
+
+    # If we receive X-Forwarded-Proto, pass it through; otherwise, pass along the
+    # scheme used to connect to this server
+    map $http_x_forwarded_proto $proxy_x_forwarded_proto {
+      default $http_x_forwarded_proto;
+      ''      $scheme;
+    }
+
+    # If we receive X-Forwarded-Port, pass it through; otherwise, pass along the
+    # server port the client connected to
+    map $http_x_forwarded_port $proxy_x_forwarded_port {
+      default $http_x_forwarded_port;
+      ''      $server_port;
+    }
+
+    # Set appropriate X-Forwarded-Ssl header
+    map $proxy_x_forwarded_proto $proxy_x_forwarded_ssl {
+      default off;
+      https   on;
+    }
+
     {% if nginx_proxy_protocol %}
       real_ip_header proxy_protocol;
     {% else %}
