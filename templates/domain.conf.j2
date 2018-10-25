@@ -144,15 +144,19 @@
 
       {{ logs() }}
 
-      {% if https and item.ssl.enabled | default(false) %}
+      {% if item.redirect is defined %}
+        return {{ item.redirect }};
+      {% endif %}
+
+      {% if https and item.ssl is defined and item.ssl.enabled | default(false) %}
         {{ ssl() }}
       {% endif %}
 
       {% if item.serve_acme_challenge | default(true) %}
-      {{ serve_acme_challenge() }}
+        {{ serve_acme_challenge() }}
       {% endif %}
 
-      {% if not https and item.ssl.enabled | default(false) and item.ssl.force | default(false) %}
+      {% if not https and item.ssl is defined and item.ssl.enabled | default(false) and item.ssl.force | default(false) %}
         {{ redirect_https() }}
       {% endif %}
 
@@ -167,7 +171,7 @@
 {{ server_block(false, false) }}
 {{ server_block(false, true) }}
 
-{% if item.ssl.enabled | default(false) %}
+{% if item.ssl is defined and item.ssl.enabled | default(false) %}
 {{ server_block(true, false) }}
 {{ server_block(true, true) }}
 {% endif %}
