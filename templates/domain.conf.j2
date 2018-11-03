@@ -24,8 +24,12 @@
 {%- endmacro %}
 
 {%- macro logs() %}
-    access_log /var/log/nginx/{{ item.fqdn }}_access.log;
-    error_log /var/log/nginx/{{ item.fqdn }}_error.log;
+    {% if item.access_log is defined %}
+      access_log {% if item.access_log is string %}{{ item.access_log }}{% else %}/var/log/nginx/{{ item.fqdn }}_access.log{% endif %};
+    {% endif %}
+    {% if item.error_log is defined %}
+      error_log {% if item.error_log is string %}{{ item.error_log }}{% else %}/var/log/nginx/{{ item.fqdn }}_error.log{% endif %};
+    {% endif %}
 {%- endmacro %}
 
 {%- macro ban_hacking_attempts() %}

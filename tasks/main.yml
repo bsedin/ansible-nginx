@@ -4,7 +4,6 @@
     dest: '{{ item }}'
     state: directory
   with_items:
-    - '{{ nginx_log_dir }}'
     - '{{ nginx_ssl_dir }}'
     - '{{ nginx_dir }}/conf.d'
     - '{{ nginx_dir }}/htpasswd.d'
@@ -92,6 +91,8 @@
     sysctls: '{{ nginx_sysctls }}'
     volumes: '{{ nginx_volumes }}'
     env: '{{ nginx_env }}'
+    log_driver: '{{ nginx_container_log_driver }}'
+    log_opt: '{{ nginx_container_log_opt }}'
 
 - name: restart nginx
   shell: docker restart {{ nginx_container_name }}

@@ -2,7 +2,6 @@
 nginx_image: nginx:alpine
 nginx_container_name: nginx
 nginx_dir: /etc/nginx
-nginx_log_dir: /var/log/nginx
 nginx_cache_dir: /var/lib/nginx/cache
 nginx_ssl_dir: '{{ nginx_dir }}/ssl'
 nginx_container_ssl_dir: '{{ nginx_dir }}/ssl'
@@ -54,6 +53,8 @@ nginx_docker_network:
   ipam_options: {}
 nginx_networks:
   - name: nginx-net
+nginx_container_log_driver: json-file
+nginx_container_log_opt: ''
 nginx_sysctls:
   net.core.somaxconn: '{{ nginx_maxconn }}'
 nginx_ulimits:
@@ -64,7 +65,6 @@ nginx_volumes:
   - '{{ nginx_ssl_dir }}:/etc/nginx/ssl:ro'
   - '{{ nginx_dir }}/conf.d:/etc/nginx/conf.d:ro'
   - '{{ nginx_dir }}/htpasswd.d:/etc/nginx/htpasswd.d:ro'
-  - '{{ nginx_log_dir }}:/var/log/nginx'
   - '{{ nginx_cache_dir }}:/var/lib/nginx/cache'
   - /var/www:/var/www:ro
 nginx_published_ports:
@@ -75,6 +75,12 @@ nginx_proxy_protocol: false
 nginx_listen_options: '' # eg. fastopen=500 backlog=2048 rcvbuf=64000 sndbuf=200000
 nginx_upstream_keepalive: 8
 nginx_dhparam_size: 2048
+nginx_log_format: |
+  combined '$remote_addr - $remote_user [$time_local] '
+           '"$request" $status $body_bytes_sent '
+           '"$http_referer" "$http_user_agent"'
+nginx_access_log: /var/log/nginx/access.log combined
+nginx_error_log: /var/log/nginx/error.log
 
 nginx_options_proxy_buffering: 'on'
 nginx_options_upstream_balancing_algorithm: false
