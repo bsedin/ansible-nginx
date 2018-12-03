@@ -15,7 +15,9 @@ http {
     include                /etc/nginx/mime.types;
     default_type           application/octet-stream;
 
+    {% if nginx_log_format %}
     log_format {{ nginx_log_format }};
+    {% endif %}
     access_log {{ nginx_access_log }};
     error_log  {{ nginx_error_log }};
 

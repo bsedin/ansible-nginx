@@ -75,10 +75,7 @@ nginx_proxy_protocol: false
 nginx_listen_options: '' # eg. fastopen=500 backlog=2048 rcvbuf=64000 sndbuf=200000
 nginx_upstream_keepalive: 8
 nginx_dhparam_size: 2048
-nginx_log_format: |
-  combined '$remote_addr - $remote_user [$time_local] '
-           '"$request" $status $body_bytes_sent '
-           '"$http_referer" "$http_user_agent"'
+nginx_log_format: ''
 nginx_access_log: /var/log/nginx/access.log combined
 nginx_error_log: /var/log/nginx/error.log
 
