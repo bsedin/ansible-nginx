@@ -54,7 +54,7 @@ nginx_docker_network:
 nginx_networks:
   - name: nginx-net
 nginx_container_log_driver: json-file
-nginx_container_log_opt: ''
+nginx_container_log_opt: {}
 nginx_sysctls:
   net.core.somaxconn: '{{ nginx_maxconn }}'
 nginx_ulimits:
