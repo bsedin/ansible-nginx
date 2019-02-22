@@ -160,7 +160,7 @@
         {{ serve_acme_challenge() }}
       {% endif %}
 
-      {% if not www and item.redirect_www | default(true) %}
+      {% if www and item.redirect_www | default(true) %}
           {{ redirect_www() }}
       {% endif %}
 
