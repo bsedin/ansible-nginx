@@ -94,6 +94,9 @@
     log_driver: '{{ nginx_container_log_driver }}'
     log_opt: '{{ nginx_container_log_opt }}'
 
+- name: reload nginx
+  shell: docker kill --signal=HUP {{ nginx_container_name }}
+
 - name: restart nginx
   shell: docker restart {{ nginx_container_name }}
   when: nginx_restart | default(false)
