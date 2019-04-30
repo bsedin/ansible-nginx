@@ -81,4 +81,5 @@ nginx_error_log: /var/log/nginx/error.log
 
 nginx_options_proxy_buffering: 'on'
 nginx_options_upstream_balancing_algorithm: false
-nginx_http_options: ''
+nginx_http_options: |
+  resolver 127.0.0.11;

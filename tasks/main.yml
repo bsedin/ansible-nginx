@@ -12,14 +12,14 @@
   file:
     dest: '{{ nginx_cache_dir }}'
     state: directory
-    owner: 100
-    group: 101
+    owner: '100'
+    group: '101'
 
 - name: create nginx docker network
   docker_network:
     name: '{{ nginx_docker_network.name }}'
     state: present
-    driver: '{{ nginx_docker_network.driver | default(bridge) }}'
+    driver: '{{ nginx_docker_network.driver | default("bridge") }}'
     ipam_options: '{{ nginx_docker_network.ipam_options | default({}) }}'
   when: nginx_docker_network
 
@@ -30,7 +30,7 @@
   file:
     dest: /var/www/html/{{ item.fqdn }}
     state: directory
-    mode: 0775
+    mode: '0775'
     owner: root
     group: docker
   with_items: '{{ nginx_hosts }}'
@@ -53,9 +53,9 @@
     path: '{{ nginx_dir }}/htpasswd.d/htpasswd_{{ item.fqdn }}'
     name: '{{ item.basic_auth.username }}'
     password: '{{ item.basic_auth.password }}'
-    owner: 100
-    group: 101
-    mode: 0640
+    owner: '100'
+    group: '101'
+    mode: '0640'
   when: item.basic_auth is defined
   with_items: '{{ nginx_hosts }}'
 
@@ -64,7 +64,7 @@
     state: started
     restart: yes
     recreate: yes
-    restart_policy: False
+    restart_policy: no
     auto_remove: no
     detach: no
     interactive: no
@@ -99,4 +99,4 @@
 
 - name: restart nginx
   shell: docker restart {{ nginx_container_name }}
-  when: nginx_restart | default(false)
+  when: nginx_restart | default(false) | bool
