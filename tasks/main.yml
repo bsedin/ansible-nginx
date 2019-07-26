@@ -21,7 +21,7 @@
     state: present
     driver: '{{ nginx_docker_network.driver | default("bridge") }}'
     ipam_options: '{{ nginx_docker_network.ipam_options | default({}) }}'
-  when: nginx_docker_network
+  when: nginx_docker_network | bool
 
 - name: create nginx config
   template: src=nginx.conf.j2 dest='{{ nginx_dir }}/nginx.conf'
@@ -56,7 +56,7 @@
     owner: '100'
     group: '101'
     mode: '0640'
-  when: item.basic_auth is defined
+  when: item.basic_auth is defined | bool
   with_items: '{{ nginx_hosts }}'
 
 - name: nginx test configuration
