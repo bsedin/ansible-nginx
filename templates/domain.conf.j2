@@ -145,9 +145,9 @@
   server {
       {% for address in item.listen_addresses | default(nginx_listen_addresses) %}
         {% if https %}
-          listen {{ address }}:443 ssl http2 {% if nginx_proxy_protocol %}proxy_protocol{% endif %};
+          listen {{ address }}:443 ssl http2 {% if nginx_proxy_protocol %}proxy_protocol{% endif %}{% if item.default_server | default(false) %} default_server{% endif %};
         {% else %}
-          listen {{ address }}:80 {% if nginx_proxy_protocol %}proxy_protocol{% endif %};
+          listen {{ address }}:80 {% if nginx_proxy_protocol %}proxy_protocol{% endif %}{% if item.default_server | default(false) %} default_server{% endif %};
         {% endif %}
       {% endfor %}
 
@@ -184,7 +184,10 @@
 {%- endmacro -%}
 
 {{ server_block(false, false) }}
+
+{% if (item.disable_www | default(false)) != true %}
 {{ server_block(false, true) }}
+{% endif %}
 
 {% if item.ssl is defined and item.ssl.enabled | default(false) %}
 {{ server_block(true, false) }}
