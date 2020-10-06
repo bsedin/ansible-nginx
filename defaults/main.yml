@@ -85,3 +85,4 @@ nginx_http_options: |
   resolver 127.0.0.11;
 
 nginx_disable_default_server: false
+nginx_restart: False

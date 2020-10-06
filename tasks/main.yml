@@ -99,4 +99,4 @@
 
 - name: restart nginx
   shell: docker restart {{ nginx_container_name }}
-  when: nginx_restart | default(false) | bool
+  when: nginx_restart | default(False) | bool
