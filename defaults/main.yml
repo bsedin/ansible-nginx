@@ -50,7 +50,7 @@ nginx_maxconn: 16384
 nginx_docker_network:
   name: nginx-net
   driver: bridge
-  ipam_options: {}
+  ipam_config: []
 nginx_networks:
   - name: nginx-net
 nginx_container_log_driver: json-file

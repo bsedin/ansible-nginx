@@ -20,7 +20,7 @@
     name: '{{ nginx_docker_network.name }}'
     state: present
     driver: '{{ nginx_docker_network.driver | default("bridge") }}'
-    ipam_options: '{{ nginx_docker_network.ipam_options | default({}) }}'
+    ipam_config: '{{ nginx_docker_network.ipam_config | default([]) }}'
   when: nginx_docker_network | bool
 
 - name: create nginx config
