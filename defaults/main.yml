@@ -4,7 +4,7 @@ nginx_container_name: nginx
 nginx_dir: /etc/nginx
 nginx_cache_dir: /var/lib/nginx/cache
 nginx_ssl_dir: '{{ nginx_dir }}/ssl'
-nginx_container_ssl_dir: '{{ nginx_dir }}/ssl'
+nginx_container_ssl_dir: /etc/nginx/ssl
 nginx_hosts: [] # nginx_hosts:
                 # - fqdn: yourserver.io
                 #   proxy_pass: nginx-proxy
