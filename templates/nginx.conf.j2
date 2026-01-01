@@ -68,22 +68,22 @@ http {
     tcp_nodelay             on;
     tcp_nopush              on;
 
-    client_max_body_size    2048m;
-    client_body_timeout     10;
+    client_max_body_size    50G;
+    client_body_timeout     30;
     client_body_buffer_size 128k;
     reset_timedout_connection on;
 
-    keepalive_timeout       30;
+    keepalive_timeout       600;
     keepalive_requests      60000;
 
     proxy_buffering         {{ nginx_options_proxy_buffering }};
     proxy_buffer_size       32k;
     proxy_buffers           16 32k;
     proxy_next_upstream     error timeout invalid_header http_500 http_502 http_503;
-    proxy_connect_timeout   120s;
-    proxy_read_timeout      120s;
-    proxy_send_timeout      120s;
-    send_timeout            5s;
+    proxy_connect_timeout   600s;
+    proxy_read_timeout      3600s;
+    proxy_send_timeout      600s;
+    send_timeout            600s;
     proxy_intercept_errors  on;
 
     set_real_ip_from  127.0.0.1;
@@ -138,3 +138,5 @@ http {
 
     include /etc/nginx/conf.d/*;
 }
+
+{{ nginx_additional_config }}

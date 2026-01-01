@@ -3,6 +3,8 @@ nginx_image: nginx:alpine
 nginx_container_name: nginx
 nginx_dir: /etc/nginx
 nginx_cache_dir: /var/lib/nginx/cache
+nginx_uid: 100
+nginx_gid: 101
 nginx_ssl_dir: '{{ nginx_dir }}/ssl'
 nginx_container_ssl_dir: /etc/nginx/ssl
 nginx_hosts: [] # nginx_hosts:
@@ -53,6 +55,7 @@ nginx_docker_network:
   ipam_config: []
 nginx_networks:
   - name: nginx-net
+nginx_network_mode: bridge
 nginx_container_log_driver: json-file
 nginx_container_log_opt: {}
 nginx_sysctls:
@@ -78,6 +81,7 @@ nginx_dhparam_size: 2048
 nginx_log_format: ''
 nginx_access_log: /var/log/nginx/access.log combined
 nginx_error_log: /var/log/nginx/error.log
+nginx_dns_servers:
 
 nginx_options_proxy_buffering: 'on'
 nginx_options_upstream_balancing_algorithm: false
@@ -86,3 +90,4 @@ nginx_http_options: |
 
 nginx_disable_default_server: false
 nginx_restart: False
+nginx_additional_config: ""
