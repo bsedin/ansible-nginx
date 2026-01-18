@@ -7,6 +7,7 @@ nginx_uid: 100
 nginx_gid: 101
 nginx_ssl_dir: '{{ nginx_dir }}/ssl'
 nginx_container_ssl_dir: /etc/nginx/ssl
+nginx_www_dir: /var/www
 nginx_hosts: [] # nginx_hosts:
                 # - fqdn: yourserver.io
                 #   proxy_pass: nginx-proxy
@@ -69,7 +70,7 @@ nginx_volumes:
   - '{{ nginx_dir }}/conf.d:/etc/nginx/conf.d:ro'
   - '{{ nginx_dir }}/htpasswd.d:/etc/nginx/htpasswd.d:ro'
   - '{{ nginx_cache_dir }}:/var/lib/nginx/cache'
-  - /var/www:/var/www:ro
+  - '{{ nginx_www_dir }}:/var/www:ro'
 nginx_published_ports:
   - 80:80
   - 443:443

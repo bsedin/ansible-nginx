@@ -5,6 +5,7 @@
     state: directory
   with_items:
     - '{{ nginx_ssl_dir }}'
+    - '{{ nginx_www_dir }}'
     - '{{ nginx_dir }}/conf.d'
     - '{{ nginx_dir }}/htpasswd.d'
 
@@ -28,7 +29,7 @@
 
 - name: ensure domain public directory
   file:
-    dest: /var/www/html/{{ item.fqdn }}
+    dest: '{{ nginx_www_dir }}/html/{{ item.fqdn }}'
     state: directory
     mode: '0775'
     owner: root
