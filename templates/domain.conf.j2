@@ -52,6 +52,14 @@
   {% endif %}
 {%- endmacro -%}
 
+{%- macro ban_ai_crawlers() %}
+  {% if item.ban_ai_crawlers | default(true) %}
+    if ($http_user_agent ~* ^(.*)GPTBot(.*)$) {
+        return 402;
+    }
+  {% endif %}
+{%- endmacro -%}
+
 {%- macro serve_acme_challenge() %}
   location /.well-known/acme-challenge {
     root /var/www/html/{{ item.fqdn }};
@@ -115,6 +123,7 @@
   {% endif %}
 
   {{ ban_hacking_attempts() }}
+  {{ ban_ai_crawlers() }}
 
   {% if item.locations is defined %}
       {% for location in item.locations %}
