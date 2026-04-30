@@ -87,7 +87,8 @@ nginx_dns_servers:
 nginx_options_proxy_buffering: 'on'
 nginx_options_upstream_balancing_algorithm: false
 nginx_http_options: |
-  resolver 127.0.0.11;
+  {{ nginx_resolver }}
+nginx_resolver: resolver 127.0.0.11;
 
 nginx_disable_default_server: false
 nginx_restart: False
