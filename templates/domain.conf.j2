@@ -57,6 +57,10 @@
     if ($http_user_agent ~* ^(.*)GPTBot(.*)$) {
         return 402;
     }
+
+    if ($http_user_agent ~* ^(.*)ClaudeBot(.*)$) {
+        return 402;
+    }
   {% endif %}
 {%- endmacro -%}
 
