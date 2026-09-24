@@ -8,7 +8,11 @@
       server {{ item.proxy_pass }} max_fails=0 fail_timeout=0;
     {% else %}
       {% for server in item.proxy_pass %}
-        server {{ server }} max_fails=0 fail_timeout=0;
+        {% if server is string %}
+          server {{ server }} max_fails=0 fail_timeout=0;
+        {% else %}
+          server {{ server.server }} {{ server.opts | default("max_fails=0 fail_timeout=0") }};
+        {% endif %}
       {% endfor %}
     {% endif %}
 
@@ -22,8 +26,8 @@
   map $http_x_proxy_to $pool {
       default "{{ upstream }}";
       {% if item.proxy_pass is string %}
-        local "{{ item.proxy_pass}}";
-      {% else %}
+        local "{{ item.proxy_pass }}";
+      {% elif item.proxy_pass[0] is string %}
         local "{{ item.proxy_pass[0] }}";
       {% endif %}
   }
