@@ -105,7 +105,7 @@ http {
     }
 
     # Set appropriate X-Forwarded-Ssl header
-    map $proxy_x_forwarded_proto $proxy_x_forwarded_ssl {
+    map $http_x_forwarded_proto $proxy_x_forwarded_ssl {
       default off;
       https   on;
     }
@@ -122,7 +122,6 @@ http {
       listen {{ address }}:80 default_server {{ nginx_listen_options }};
       {% endfor %}
       server_name _;
-      access_log off;
       return      444;
     }
     {% endif %}
