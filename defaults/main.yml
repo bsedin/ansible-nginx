@@ -68,6 +68,8 @@ nginx_volumes:
   - '{{ nginx_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro'
   - '{{ nginx_ssl_dir }}:/etc/nginx/ssl:ro'
   - '{{ nginx_dir }}/conf.d:/etc/nginx/conf.d:ro'
+  - '{{ nginx_dir }}/sites-available:/etc/nginx/sites-available:ro'
+  - '{{ nginx_dir }}/sites-enabled:/etc/nginx/sites-enabled:ro'
   - '{{ nginx_dir }}/htpasswd.d:/etc/nginx/htpasswd.d:ro'
   - '{{ nginx_cache_dir }}:/var/lib/nginx/cache'
   - '{{ nginx_www_dir }}:/var/www:ro'

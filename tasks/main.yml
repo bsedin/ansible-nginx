@@ -1,5 +1,5 @@
 ---
-- name: ensure nginx data dir
+- name: Ensure nginx data dir
   file:
     dest: '{{ item }}'
     state: directory
@@ -7,16 +7,18 @@
     - '{{ nginx_ssl_dir }}'
     - '{{ nginx_www_dir }}'
     - '{{ nginx_dir }}/conf.d'
+    - '{{ nginx_dir }}/sites-available'
+    - '{{ nginx_dir }}/sites-enabled'
     - '{{ nginx_dir }}/htpasswd.d'
 
-- name: ensure nginx cache dir
+- name: Ensure nginx cache dir
   file:
     dest: '{{ nginx_cache_dir }}'
     state: directory
     owner: '{{ nginx_uid }}'
     group: '{{ nginx_gid }}'
 
-- name: create nginx docker network
+- name: Create nginx docker network
   docker_network:
     name: '{{ nginx_docker_network.name }}'
     state: present
@@ -24,10 +26,10 @@
     ipam_config: '{{ nginx_docker_network.ipam_config | default([]) }}'
   when: nginx_docker_network is defined | bool
 
-- name: create nginx config
+- name: Create nginx config
   template: src=nginx.conf.j2 dest='{{ nginx_dir }}/nginx.conf'
 
-- name: ensure domain public directory
+- name: Ensure domain public directory
   file:
     dest: '{{ nginx_www_dir }}/html/{{ item.fqdn }}'
     state: directory
@@ -36,18 +38,18 @@
     group: docker
   with_items: '{{ nginx_hosts }}'
 
-- name: generate domain config
+- name: Generate domain config
   template:
     src: templates/domain.conf.j2
-    dest: '{{ nginx_dir }}/conf.d/{{ item.fqdn }}.conf'
+    dest: '{{ nginx_dir }}/sites-available/{{ item.fqdn }}.conf'
   with_items: '{{ nginx_hosts }}'
 
-- name: generate dh param
+- name: Generate dh param
   openssl_dhparam:
     path: '{{ nginx_ssl_dir }}/dh.pem'
     size: '{{ nginx_dhparam_size }}'
 
-- name: add htpasswd files
+- name: Add htpasswd files
   htpasswd:
     path: '{{ nginx_dir }}/htpasswd.d/htpasswd_{{ item.fqdn }}'
     name: '{{ item.basic_auth.username }}'
@@ -58,15 +60,29 @@
   when: item.basic_auth is defined | bool
   with_items: '{{ nginx_hosts }}'
 
-- name: nginx test configuration
+- name: Clean up old symlinks
+  community.general.file_remove:
+    path: '{{ nginx_dir }}/sites-enabled'
+    pattern: "*"
+    file_type: link
+
+- name: Symlink domain config
+  ansible.builtin.file:
+    src: '../sites-available/{{ item.fqdn }}.conf'
+    dest: '{{ nginx_dir }}/sites-enabled/{{ item.fqdn }}.conf'
+    state: link
+  with_items: '{{ nginx_hosts }}'
+
+- name: Nginx test configuration
   docker_container:
     state: started
-    restart: yes
-    recreate: yes
-    restart_policy: no
-    auto_remove: no
-    detach: no
-    interactive: no
+    restart: true
+    recreate: true
+    restart_policy: false
+    auto_remove: false
+    detach: false
+    interactive: false
+    pull: true
     name: nginx-configtest
     links: '{{ nginx_links }}'
     networks: '{{ nginx_networks }}'
@@ -77,11 +93,12 @@
     dns_servers: '{{ nginx_dns_servers }}'
     network_mode: '{{ nginx_network_mode }}'
 
-- name: run nginx docker container
+- name: Run nginx docker container
   docker_container:
     state: started
-    restart: no
-    recreate: no
+    restart: false
+    recreate: false
+    pull: true
     name: '{{ nginx_container_name }}'
     image: '{{ nginx_image }}'
     restart_policy: always
@@ -97,10 +114,10 @@
     log_opt: '{{ nginx_container_log_opt }}'
     network_mode: '{{ nginx_network_mode }}'
 
-- name: reload nginx
+- name: Reload nginx
   shell: docker kill --signal=HUP {{ nginx_container_name }}
   when: nginx_restart != true
 
-- name: restart nginx
+- name: Restart nginx
   shell: docker restart {{ nginx_container_name }}
   when: nginx_restart | default(False) | bool

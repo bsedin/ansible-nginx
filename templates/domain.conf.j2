@@ -21,16 +21,6 @@
     {% endif %}
     keepalive {{ item.keepalive | default(nginx_upstream_keepalive) }};
   }
-
-  # map to different upstream backends based on header
-  map $http_x_proxy_to $pool {
-      default "{{ upstream }}";
-      {% if item.proxy_pass is string %}
-        local "{{ item.proxy_pass }}";
-      {% elif item.proxy_pass[0] is string %}
-        local "{{ item.proxy_pass[0] }}";
-      {% endif %}
-  }
 {% endif %}
 
 {%- macro server_names(subdomain) %}
@@ -92,7 +82,6 @@
   {% else %}
     {{ nginx_default_proxy_params }}
   {% endif %}
-  proxy_set_header X-Proxy-To          "local";
 {%- endmacro -%}
 
 {%- macro ssl() %}
@@ -131,8 +120,8 @@
   {% elif item.proxy_pass is defined %}
       location / {
         {% if item.basic_auth is defined %}{{ basic_auth() }}{% endif %}
-        proxy_pass http://$pool;
         {{ proxy_params() }}
+        proxy_pass http://{{ upstream }};
       }
   {% endif %}
 {%- endmacro %}

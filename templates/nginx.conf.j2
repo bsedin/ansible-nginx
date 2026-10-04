@@ -135,7 +135,8 @@ http {
       }
     }
 
-    include /etc/nginx/conf.d/*;
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*.conf;
 }
 
 {{ nginx_additional_config }}
